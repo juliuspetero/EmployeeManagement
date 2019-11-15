@@ -24,8 +24,7 @@
           "netcoreapp2.2"
         ],
         "sources": {
-          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "https://api.nuget.org/v3/index.json": {}
+          "D:\\NugetPackages": {}
         },
         "frameworks": {
           "netcoreapp2.2": {
@@ -60,7 +59,7 @@
             },
             "Microsoft.VisualStudio.Web.CodeGeneration.Design": {
               "target": "Package",
-              "version": "[2.2.4, )"
+              "version": "[3.0.0, )"
             },
             "NLog.Web.AspNetCore": {
               "target": "Package",
