@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using EmployeeManagement.Models;
 using EmployeeManagement.Security;
+using EmployeeManagement.Utilities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -34,10 +35,12 @@ namespace EmployeeManagement
 
             services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
-                options.Password.RequiredLength = 10;
-                options.Password.RequiredUniqueChars = 3;
-                //options.Password.RequireNonAlphanumeric = false;
-
+                options.Password.RequiredLength = 6;
+                options.Password.RequiredUniqueChars = 0;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
                 // This allow the user to first confirm their email before they could sign in
                 options.SignIn.RequireConfirmedEmail = true;
 
@@ -107,6 +110,12 @@ namespace EmployeeManagement
                 options.AddPolicy("AdminRolePolicy",
                     policy => policy.RequireRole("Admin"));
             });
+
+            // Sending email configuration  settings
+            services.Configure<EmailSettings>(_config.GetSection("EmailSettings"));
+
+            // When the service of sending email is needed only IEmail is injected in the constructor
+            services.AddSingleton<IEmailSender, EmailSender>();
 
             services.AddScoped<IEmployeeRepository, SQLEmployeeRepository>();
 

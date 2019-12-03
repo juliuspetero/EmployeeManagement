@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using EmployeeManagement.Models;
+using EmployeeManagement.Utilities;
 using EmployeeManagement.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -19,13 +20,16 @@ namespace EmployeeManagement.Controllers
         private readonly UserManager<ApplicationUser> userManager;
         private readonly SignInManager<ApplicationUser> signInManager;
         private readonly ILogger<AccountController> logger;
+        private readonly IEmailSender emailSender;
 
         public AccountController(UserManager<ApplicationUser> userManager,
-            SignInManager<ApplicationUser> signInManager, ILogger<AccountController> logger)
+            SignInManager<ApplicationUser> signInManager, ILogger<AccountController> logger,
+            IEmailSender emailSender)
         {
             this.userManager = userManager;
             this.signInManager = signInManager;
             this.logger = logger;
+            this.emailSender = emailSender;
         }
 
         [HttpPost]
@@ -51,7 +55,7 @@ namespace EmployeeManagement.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser
+                ApplicationUser user = new ApplicationUser
                 {
                     UserName = model.Email,
                     Email = model.Email,
@@ -71,6 +75,8 @@ namespace EmployeeManagement.Controllers
 
                     // For now log the link and copy it to the browser
                     logger.Log(LogLevel.Warning, confirmationLink);
+
+                    await this.emailSender.SendEmailAsync(user.Email, "Email Confirmation", confirmationLink);
 
                     if (signInManager.IsSignedIn(User) && User.IsInRole("Admin"))
                     {
@@ -123,7 +129,18 @@ namespace EmployeeManagement.Controllers
                 // Display this message when the password is confirmed correct in order to stop brutal attack into the system
                 if (user != null && !user.EmailConfirmed && (await userManager.CheckPasswordAsync(user, model.Password)))
                 {
-                    ModelState.AddModelError(string.Empty, "Email not confirmed yet");
+                    // Generate an token for a specified user to confirmed their email
+                    string token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                    // This link is send to user to his email and when he clicks on it, it confirm his account email
+                    string confirmationLink = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, token = token }, Request.Scheme);
+
+                    // For now log the link and copy it to the browser
+                    logger.Log(LogLevel.Warning, confirmationLink);
+
+                    await this.emailSender.SendEmailAsync(user.Email, "Email Confirmation", confirmationLink);
+
+                    ModelState.AddModelError(string.Empty, "Email not confirmed yet, Confirm your email");
                     return View(model);
                 }
 
@@ -216,7 +233,18 @@ namespace EmployeeManagement.Controllers
                 user = await userManager.FindByEmailAsync(email);
                 if (user != null && !user.EmailConfirmed)
                 {
-                    ModelState.AddModelError(string.Empty, "Email not confirmed yet");
+                    // Generate an token for a specified user to confirmed their email
+                    string token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                    // This link is send to user to his email and when he clicks on it, it confirm his account email
+                    string confirmationLink = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, token = token }, Request.Scheme);
+
+                    // For now log the link and copy it to the browser
+                    logger.Log(LogLevel.Warning, confirmationLink);
+
+                    await this.emailSender.SendEmailAsync(user.Email, "Email Confirmation", confirmationLink);
+
+                    ModelState.AddModelError(string.Empty, "Email not confirmed yet, please confirm your email");
                     return View("Login", loginViewModel);
                 }
             }
@@ -251,6 +279,17 @@ namespace EmployeeManagement.Controllers
 
                         // For now log the link and copy it to the browser
                         logger.Log(LogLevel.Warning, confirmationLink);
+
+                        // Generate an token for a specified user to confirmed their email
+                        token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+                        // This link is send to user to his email and when he clicks on it, it confirm his account email
+                        confirmationLink = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, token = token }, Request.Scheme);
+
+                        // For now log the link and copy it to the browser
+                        logger.Log(LogLevel.Warning, confirmationLink);
+
+                        await this.emailSender.SendEmailAsync(user.Email, "Email Confirmation", confirmationLink);
 
                         ViewBag.ErrorTitle = "Registration Successful";
                         ViewBag.ErrorMessage = "Before you can login, please confirm your email, by clicking on the confirmation link we have email to you";
